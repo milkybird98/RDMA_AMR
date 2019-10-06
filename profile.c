@@ -1293,15 +1293,15 @@ void calculate_results(void)
    results[114] = (double) (counter_malloc - counter_malloc_init);
    results[115] = size_malloc - size_malloc_init;
 
-   MPI_Allreduce(results, average, 128, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-   MPI_Allreduce(results, minimum, 128, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-   MPI_Allreduce(results, maximum, 128, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+   RDMA_Allreduce(results, average, 128, R_TYPE_DOUBLE, R_OP_SUM);
+   RDMA_Allreduce(results, minimum, 128, R_TYPE_DOUBLE, R_OP_MIN);
+   RDMA_Allreduce(results, maximum, 128, R_TYPE_DOUBLE, R_OP_MAX);
 
    for (i = 0; i < 128; i++) {
       average[i] /= (double) num_pes;
       stddev[i] = (results[i] - average[i])*(results[i] - average[i]);
    }
-   MPI_Allreduce(stddev, stddev_sum, 128, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+   RDMA_Allreduce(stddev, stddev_sum, 128, R_TYPE_DOUBLE, R_OP_SUM);
    for (i = 0; i < 128; i++)
       stddev[i] = sqrt(stddev_sum[i]/((double) num_pes));
 }

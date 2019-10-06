@@ -65,7 +65,7 @@ void driver(void)
 
    MARKER_START(my_pe);
 #ifdef GEM5_MARKERS
-   MPI_Barrier(MPI_COMM_WORLD);
+   RDMA_Barrier();
 #endif
 
    for (comm_stage = 0, ts = 1; ts <= num_tsteps; ts++) {

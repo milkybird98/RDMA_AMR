@@ -35,7 +35,7 @@
 
 double timer(void)
 {
-   return(MPI_Wtime());
+   return(RDMA_Wtime());
 }
 
 void *ma_malloc(size_t size, char *file, int line)

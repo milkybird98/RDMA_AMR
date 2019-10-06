@@ -195,7 +195,7 @@ int main(int argc, char** argv)
       params[33] = nonblocking;
       params[34] = refine_ghost;
 
-      MPI_Bcast(params, 35, MPI_INTEGER, 0, MPI_COMM_WORLD);
+      RDMA_Bcast(params, 35, R_TYPE_INTEGER, 0);
 
       objs = (double *) ma_malloc(14*num_objects*sizeof(double),
                                   __FILE__, __LINE__);
@@ -216,10 +216,10 @@ int main(int argc, char** argv)
          objs[i++] = objects[object_num].inc[2];
       }
 
-      MPI_Bcast(objs, 14*num_objects, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+      RDMA_Bcast(objs, 14*num_objects, R_TYPE_DOUBLE, 0);
       free(objs);
    } else {
-      MPI_Bcast(params, 35, MPI_INTEGER, 0, MPI_COMM_WORLD);
+      RDMA_Bcast(params, 35, R_TYPE_INTEGER, 0);
       max_num_blocks = params[ 0];
       target_active = params[ 1];
       num_refine = params[ 2];
@@ -261,7 +261,7 @@ int main(int argc, char** argv)
       objs = (double *) ma_malloc(14*num_objects*sizeof(double),
                                   __FILE__, __LINE__);
 
-      MPI_Bcast(objs, 14*num_objects, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+      RDMA_Bcast(objs, 14*num_objects, R_TYPE_DOUBLE, 0);
 
       for (i = object_num = 0; object_num < num_objects; object_num++) {
          objects[object_num].type = (int) objs[i++];
@@ -296,7 +296,7 @@ int main(int argc, char** argv)
 
    deallocate();
 
-   MPI_Finalize();
+   RDMA_Finalize();
 
    exit(0);
 }

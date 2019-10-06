@@ -41,13 +41,12 @@ void comm_proc(void)
    int *send_int = (int *) send_buff;
    int *recv_int = (int *) recv_buff;
    block *bp;
-   MPI_Status status;
 
    for (dir = 0; dir < 3; dir++) {
       type = 10 + dir;
       for (i = 0; i < num_comm_partners[dir]; i++)
          MPI_Irecv(&recv_int[comm_index[dir][i]], comm_num[dir][i],
-                   MPI_INTEGER, comm_partner[dir][i], type, MPI_COMM_WORLD,
+                   R_TYPE_INTEGER, comm_partner[dir][i], type, MPI_COMM_WORLD,
                    &request[i]);
 
       for (i = 0; i < num_comm_partners[dir]; i++) {
@@ -60,10 +59,10 @@ void comm_proc(void)
                         blocks[comm_block[dir][comm_index[dir][i]+n]].new_proc;
          if (nonblocking)
             MPI_Isend(&send_int[comm_index[dir][i]], comm_num[dir][i],
-                      MPI_INTEGER, comm_partner[dir][i], type, MPI_COMM_WORLD,
+                      R_TYPE_INTEGER, comm_partner[dir][i], type, MPI_COMM_WORLD,
                       &s_req[i]);
          else
-            MPI_Send(&send_int[0], comm_num[dir][i], MPI_INTEGER,
+            MPI_Send(&send_int[0], comm_num[dir][i], R_TYPE_INTEGER,
                      comm_partner[dir][i], type, MPI_COMM_WORLD);
       }
 
@@ -82,8 +81,10 @@ void comm_proc(void)
          }
       }
 
+      /*
       if (nonblocking)
          for (i = 0; i < num_comm_partners[dir]; i++)
             err = MPI_Waitany(num_comm_partners[dir], s_req, &which, &status);
+      */
    }
 }

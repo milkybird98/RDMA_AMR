@@ -57,7 +57,7 @@ void comm(int start, int num_comm, int stage)
       t1 = timer();
       for (i = 0; i < num_comm_partners[dir]; i++) {
          MPI_Irecv(&recv_buff[comm_recv_off[dir][comm_index[dir][i]]],
-                   recv_size[dir][i], MPI_DOUBLE,
+                   recv_size[dir][i], R_TYPE_DOUBLE,
                    comm_partner[dir][i], type, MPI_COMM_WORLD, &request[i]);
          counter_halo_recv[dir]++;
          size_mesg_recv[dir] += (double) recv_size[dir][i]*sizeof(double);
@@ -86,10 +86,10 @@ void comm(int start, int num_comm, int stage)
          t3 = timer();
          if (nonblocking)
             MPI_Isend(&send_buff[comm_send_off[dir][comm_index[dir][i]]],
-                      send_size[dir][i], MPI_DOUBLE, comm_partner[dir][i],
+                      send_size[dir][i], R_TYPE_DOUBLE, comm_partner[dir][i],
                       type, MPI_COMM_WORLD, &s_req[i]);
          else
-            MPI_Send(send_buff, send_size[dir][i], MPI_DOUBLE,
+            MPI_Send(send_buff, send_size[dir][i], R_TYPE_DOUBLE,
                      comm_partner[dir][i], type, MPI_COMM_WORLD);
          counter_halo_send[dir]++;
          size_mesg_send[dir] += (double) send_size[dir][i]*sizeof(double);

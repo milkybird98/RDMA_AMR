@@ -56,7 +56,7 @@ int reduce_blocks()
          if ((pp = &parents[p])->number >= 0)
             if (pp->level == l)
                bin[my_pe]++;
-      MPI_Allreduce(bin, gbin, num_pes, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD);
+      RDMA_Allreduce(bin, gbin, num_pes, R_TYPE_INTEGER, R_OP_SUM);
       for (num_parents = i = 0; i < num_pes; i++)
          num_parents += gbin[i];
 
@@ -133,8 +133,7 @@ void add_blocks()
          for (i = 0; i < num_pes; i++)
             bin[i] = 0;
          bin[my_pe] = local_num_blocks[l];
-         MPI_Allreduce(bin, gbin, num_pes, MPI_INTEGER, MPI_SUM,
-                       MPI_COMM_WORLD);
+         RDMA_Allreduce(bin, gbin, num_pes, R_TYPE_INTEGER, R_OP_SUM);
 
          while (split < num_split)
             for (i = 0; i < num_pes; i++)
@@ -167,8 +166,8 @@ void add_blocks()
       t2 = timer();
       split_blocks();
       t3 += timer() - t2;
-      MPI_Allreduce(local_num_blocks, num_blocks, (num_refine+1), MPI_INTEGER,
-                    MPI_SUM, MPI_COMM_WORLD);
+      RDMA_Allreduce(local_num_blocks, num_blocks, (num_refine+1), R_TYPE_INTEGER,
+                    R_OP_SUM);
    }
    timer_target_ab += timer() - t1;
    timer_target_da += timer() - t1 - t3;
