@@ -70,6 +70,6 @@ par_comm par_b, par_p, par_p1;
 int *bin,
     *gbin;
 
-MPI_Comm *comms;
+RDMA_Comm *comms;
 int *me;
 int *np;

@@ -78,7 +78,7 @@ void comm_refine(void)
          for(which=0;which<num_comm_partners[dir];which++){
             if(rev_status[which]) continue;
             //err = MPI_Waitany(num_comm_partners[dir], request, &which, &status);
-            int rc = MPI_Irecv(&recv_int[comm_index[dir][which]], comm_num[dir][which],
+            int rc = RDMA_Irecv(&recv_int[comm_index[dir][which]], comm_num[dir][which],
             R_TYPE_INT, comm_partner[dir][which]);
 
             if(rc == 0){

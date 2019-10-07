@@ -146,11 +146,15 @@ int main(int argc, char** argv)
             object_num++;
          } else if (!strcmp(argv[i], "--help")) {
             print_help_message();
-            MPI_Abort(MPI_COMM_WORLD, -1);
+            //MPI_Abort(MPI_COMM_WORLD, -1);
+            RDMA_Finalize();
+            exit(0);
          } else {
             printf("** Error ** Unknown input parameter %s\n", argv[i]);
             print_help_message();
-            MPI_Abort(MPI_COMM_WORLD, -1);
+            //MPI_Abort(MPI_COMM_WORLD, -1);
+            RDMA_Finalize();
+            exit(0);
          }
       if (check_input())
          exit(-1);

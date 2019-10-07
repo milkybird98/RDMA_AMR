@@ -46,7 +46,7 @@ void comm(int start, int num_comm, int stage)
                               {0, 2, 1}, {1, 0, 2}, {2, 1, 0} };
    double t1, t2, t3, t4;
    block *bp;
-   MPI_Status status;
+   //MPI_Status status;
 
    for (o = 0; o < 3; o++) {
       if (permute)

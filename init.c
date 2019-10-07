@@ -125,11 +125,11 @@ void init(void)
    pes = 1;
    start[0] = 0;
    num = num_pes;
-   comms = (MPI_Comm *) ma_malloc((nfac+1)*sizeof(MPI_Comm),
+   comms = (RDMA_Comm *) ma_malloc((nfac+1)*sizeof(RDMA_Comm),
                                   __FILE__, __LINE__);
    me = (int *) ma_malloc((nfac+1)*sizeof(int), __FILE__, __LINE__);
    np = (int *) ma_malloc((nfac+1)*sizeof(int), __FILE__, __LINE__);
-   comms[0] = MPI_COMM_WORLD;
+   comms[0] = 0;
    me[0] = my_pe;
    np[0] = num_pes;
    // initialize
@@ -145,9 +145,9 @@ void init(void)
             npz1 /= fact;
       num /= fact;
       set = me[n]/num;
-      MPI_Comm_split(comms[n], set, me[n], &comms[n+1]);
-      MPI_Comm_rank(comms[n+1], &me[n+1]);
-      MPI_Comm_size(comms[n+1], &np[n+1]);
+      RDMA_Comm_split(comms[n], set, me[n], &comms[n+1]);
+      me[n+1] = RDMA_Rank(comms[n+1]);
+      np[n+1] = RDMA_Size(comms[n+1]);
       for (j = pes-1; j >= 0; j--)
          for (k = 0; k < fact; k++) {
             m = j*fact + k;
