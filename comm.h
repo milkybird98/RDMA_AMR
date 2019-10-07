@@ -27,12 +27,13 @@
 #ifndef COMM_H
 #define COMM_H
 
+#include "mpi.hpp"
 /* comm partner variables */
-double *send_buff, *recv_buff;    /* use in comm and for balancing blocks */
+extern double *send_buff, *recv_buff;    /* use in comm and for balancing blocks */
 
-int s_buf_size, r_buf_size;
+extern int s_buf_size, r_buf_size;
 
-int num_comm_partners[3],  // number of comm partners in each direction
+extern int num_comm_partners[3],  // number of comm partners in each direction
     *comm_partner[3],      // list of comm partners in each direction
     max_comm_part[3],      // lengths of comm partners arrays
     *send_size[3],         // send sizes for each comm partner
@@ -52,7 +53,7 @@ int num_comm_partners[3],  // number of comm partners in each direction
 
 //MPI_Request *request, *s_req;
 
-int max_num_req;
+extern int max_num_req;
 
 // for comm_parent - this is a non-symetric communication
 
@@ -68,13 +69,13 @@ typedef struct {
    int num_cases;              // number to communicate
    int max_cases;              // max number to communicate
 } par_comm;
-par_comm par_b, par_p, par_p1;
+extern par_comm par_b, par_p, par_p1;
 
-int *bin,
+extern int *bin,
     *gbin;
 
-RDMA_Comm *comms;
-int *me;
-int *np;
+extern RDMA_Comm *comms;
+extern int *me;
+extern int *np;
 
 #endif
