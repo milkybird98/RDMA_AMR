@@ -65,7 +65,7 @@ void comm_parent(void)
                   par_b.comm_part[i]);
    }
 
-   int rev_status = (int *)malloc(sizeof(int)*par_p.num_comm_part);
+   int *rev_status = (int *)malloc(sizeof(int)*par_p.num_comm_part);
    for(int i=0;i<par_p.num_comm_part;i++){
       rev_status[i]=0;
    }
@@ -130,7 +130,7 @@ void comm_parent_reverse(void)
                   par_p.comm_part[i]);
    }
 
-   int rev_status = (int *)malloc(sizeof(int)*par_b.num_comm_part);
+   int *rev_status = (int *)malloc(sizeof(int)*par_b.num_comm_part);
    for(int i=0;i<par_b.num_comm_part;i++){
       rev_status[i]=0;
    }
@@ -190,7 +190,7 @@ void comm_parent_unrefine(void)
                   par_p.comm_part[i]);
    }
 
-   int rev_status = (int *)malloc(sizeof(int)*par_b.num_comm_part);
+   int *rev_status = (int *)malloc(sizeof(int)*par_b.num_comm_part);
    for(int i=0;i<par_p.num_comm_part;i++){
       rev_status[i]=0;
    }
@@ -301,7 +301,7 @@ void comm_parent_proc(void)
                   par_b.comm_part[i]);
    }
 
-   int rev_status = (int *)malloc(sizeof(int)*par_p1.num_comm_part);
+   int *rev_status = (int *)malloc(sizeof(int)*par_p1.num_comm_part);
    for(int i=0;i<par_p1.num_comm_part;i++){
       rev_status[i]=0;
    }

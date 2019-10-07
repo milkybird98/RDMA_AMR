@@ -65,7 +65,7 @@ void comm_refine(void)
                      comm_partner[dir][i]);
       }
 
-      int rev_status = (int *)malloc(sizeof(int)*num_comm_partners[dir]);
+      int *rev_status = (int *)malloc(sizeof(int)*num_comm_partners[dir]);
       for(int i=0;i<num_comm_partners[dir];i++){
          rev_status[i]=0;
       }
@@ -143,7 +143,7 @@ void comm_reverse_refine(void)
                      comm_partner[dir][i]);
       }
 
-      int rev_status = (int *)malloc(sizeof(int)*num_comm_partners[dir]);
+      int *rev_status = (int *)malloc(sizeof(int)*num_comm_partners[dir]);
       for(int i=0;i<num_comm_partners[dir];i++){
          rev_status[i]=0;
       }
@@ -224,7 +224,7 @@ void comm_refine_unrefine(void)
                      comm_partner[dir][i]);
       }
 
-      int rev_status = (int *)malloc(sizeof(int)*num_comm_partners[dir]);
+      int *rev_status = (int *)malloc(sizeof(int)*num_comm_partners[dir]);
       for(int i=0;i<num_comm_partners[dir];i++){
          rev_status[i]=0;
       }

@@ -63,7 +63,7 @@ void comm_proc(void)
       }
 
       // malloc一个状态表，用于标记该rank的数据是否被接收
-      int rev_status = (int *)malloc(sizeof(int)*num_comm_partners[dir]);
+      int *rev_status = (int *)malloc(sizeof(int)*num_comm_partners[dir]);
       for(int i=0;i<num_comm_partners[dir];i++){
          rev_status[i]=0;
       }

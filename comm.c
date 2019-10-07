@@ -147,7 +147,7 @@ void comm(int start, int num_comm, int stage)
             }
       }
 
-      int rev_status = (int *)malloc(sizeof(int)*num_comm_partners[dir]);
+      int *rev_status = (int *)malloc(sizeof(int)*num_comm_partners[dir]);
       for(int i=0;i<num_comm_partners[dir];i++){
          rev_status[i]=0;
       }
