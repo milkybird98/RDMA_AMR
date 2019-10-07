@@ -38,7 +38,7 @@ void plot(int ts)
    int i, j, n, total_num_blocks, *buf, buf_size, size;
    char fname[20];
    block *bp;
-   MPI_Status status;
+   //MPI_Status status;
    FILE *fp;
 
    if (!my_pe) {

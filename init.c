@@ -117,11 +117,11 @@ void init(void)
          pos[i][j] = 0;
    nfac = factor(num_pes, fac);
    max_num_req = num_pes;
-   request = (MPI_Request *) ma_malloc(max_num_req*sizeof(MPI_Request),
-                                       __FILE__, __LINE__);
-   if (nonblocking)
-      s_req = (MPI_Request *) ma_malloc(max_num_req*sizeof(MPI_Request),
-                                        __FILE__, __LINE__);
+   //request = (MPI_Request *) ma_malloc(max_num_req*sizeof(MPI_Request),
+   //                                   __FILE__, __LINE__);
+   //if (nonblocking)
+   //   s_req = (MPI_Request *) ma_malloc(max_num_req*sizeof(MPI_Request),
+   //                                     __FILE__, __LINE__);
    pes = 1;
    start[0] = 0;
    num = num_pes;

@@ -39,7 +39,7 @@ void comm_refine(void)
    int *send_int = (int *) send_buff;
    int *recv_int = (int *) recv_buff;
    block *bp;
-   MPI_Status status;
+   //MPI_Status status;
 
    for (dir = 0; dir < 3; dir++) {
       type = 10 + dir;
@@ -115,7 +115,7 @@ void comm_reverse_refine(void)
    int *send_int = (int *) send_buff;
    int *recv_int = (int *) recv_buff;
    block *bp;
-   MPI_Status status;
+   //Status status;
 
    for (dir = 0; dir < 3; dir++) {
       type = 13 + dir;
@@ -198,7 +198,7 @@ void comm_refine_unrefine(void)
    int *send_int = (int *) send_buff;
    int *recv_int = (int *) recv_buff;
    block *bp;
-   MPI_Status status;
+   //MPI_Status status;
 
    for (dir = 0; dir < 3; dir++) {
       type = 16 + dir;

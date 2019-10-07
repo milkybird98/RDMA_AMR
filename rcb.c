@@ -132,7 +132,7 @@ void exchange(double *tp, double *tm, double *tu)
    int f, s, sp, fp, i, j[25], l, rb, lev, block_size, type, type1,
        par[25], start[25];
    double t1, t2, t3, t4;
-   MPI_Status status;
+   //MPI_Status status;
 
    block_size = 45 + num_vars*x_block_size*y_block_size*z_block_size;
    type = 40;
@@ -465,7 +465,7 @@ void move_dots(int div, int fact)
    int i, j, d, sg, mg, partner, type, off[fact+1], which, err, nr;
    int *send_int = (int *) send_buff;
    int *recv_int = (int *) recv_buff;
-   MPI_Status status;
+   //MPI_Status status;
 
    sg = np[div]/fact;
    mg = me[div]/sg;
@@ -516,11 +516,11 @@ void move_dots(int div, int fact)
             nr++;
          } else {
             off[i+1] = off[i];
-            request[i] = MPI_REQUEST_NULL;
+            //request[i] = MPI_REQUEST_NULL;
          }
       } else {
          off[i+1] = off[i];
-         request[i] = MPI_REQUEST_NULL;
+         //request[i] = MPI_REQUEST_NULL;
       }
 
    for (i = 0; i < fact; i++)
@@ -585,7 +585,7 @@ void move_dots_back()
    int i, j, d, nr, err, which;
    int *send_int = (int *) send_buff;
    int *recv_int = (int *) recv_buff;
-   MPI_Status status;
+   //MPI_Status status;
 
    int *recv_status = (int *)malloc(num_pes*sizeof(int));
    for(int i = 0;i<num_pes;i++){
@@ -602,7 +602,7 @@ void move_dots_back()
          nr++;
       } else {
          gbin[i+1] = gbin[i];
-         request[i] = MPI_REQUEST_NULL;
+         //request[i] = MPI_REQUEST_NULL;
       }
 
    for (i = 0; i < num_pes; i++)
@@ -622,7 +622,7 @@ void move_dots_back()
       for (which = 0; which < nr; which++) {
          //err = MPI_Waitany(num_pes, request, &which, &status);
          if (recv_status[which] != 0) continue;
-         int res = MPI_Irecv(&recv_int[gbin[which]], 2*from[which], R_TYPE_INT, which);
+         int res = RDMA_Irecv(&recv_int[gbin[which]], 2*from[which], R_TYPE_INT, which);
          if(res == 0){
             count++;
             recv_status[which]=1;

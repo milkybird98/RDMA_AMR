@@ -47,7 +47,7 @@ int num_comm_partners[3],  // number of comm partners in each direction
     s_buf_num[3],          // total amount being sent in each direction
     r_buf_num[3];          // total amount being received in each direction
 
-MPI_Request *request, *s_req;
+//MPI_Request *request, *s_req;
 
 int max_num_req;
 

@@ -347,6 +347,7 @@ void check_buff_size(void)
                                        __FILE__, __LINE__);
    }
 
+/*
    if (max_comm > max_num_req) {
       free(request);
       max_num_req = (int) (2.0*((double) max_comm));
@@ -358,6 +359,7 @@ void check_buff_size(void)
                                            __FILE__, __LINE__);
       }
    }
+   */
 }
 
 void update_comm_list(void)

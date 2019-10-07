@@ -111,7 +111,7 @@ void comm_parent_reverse(void)
    int i, j, which, type, offset;
    int *send_int = (int *) send_buff;
    int *recv_int = (int *) recv_buff;
-   MPI_Status status;
+   //MPI_Status status;
 
    type = 21;
 
@@ -171,7 +171,7 @@ void comm_parent_unrefine(void)
    int i, j, which, type, offset;
    int *send_int = (int *) send_buff;
    int *recv_int = (int *) recv_buff;
-   MPI_Status status;
+   //MPI_Status status;
 
    type = 22;
 
@@ -233,7 +233,7 @@ void comm_parent_proc(void)
    int *send_int = (int *) send_buff;
    int *recv_int = (int *) recv_buff;
    parent *pp;
-   MPI_Status status;
+   //MPI_Status status;
 
    // duplicate par_p to par_p1
    if (par_p.num_comm_part > par_p1.max_part) {
