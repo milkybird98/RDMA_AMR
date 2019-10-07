@@ -43,7 +43,7 @@ typedef struct {
    int cen[3];
    double ****array;
 } block;
-extern block *blocks;
+block *blocks;
 
 typedef struct {
    int number;
@@ -57,69 +57,69 @@ typedef struct {
    int child_node[8];
    int cen[3];
 } parent;
-extern parent *parents;
+parent *parents;
 
 typedef struct {
    int number;     // number of block
    int n;          // position in block array
 } sorted_block;
-extern sorted_block *sorted_list;
-extern int *sorted_index;
+sorted_block *sorted_list;
+int *sorted_index;
 
-extern int my_pe;
-extern int num_pes;
+int my_pe;
+int num_pes;
 
-extern int max_num_blocks;
-extern int target_active;
-extern int target_max;
-extern int target_min;
-extern int num_refine;
-extern int uniform_refine;
-extern int x_block_size, y_block_size, z_block_size;
-extern int num_vars;
-extern int comm_vars;
-extern int init_block_x, init_block_y, init_block_z;
-extern int reorder;
-extern int npx, npy, npz;
-extern int inbalance;
-extern int refine_freq;
-extern int report_diffusion;
-extern int checksum_freq;
-extern int stages_per_ts;
-extern int error_tol;
-extern int num_tsteps;
-extern int stencil;
-extern int report_perf;
-extern int plot_freq;
-extern int lb_opt;
-extern int block_change;
-extern int code;
-extern int permute;
-extern int nonblocking;
-extern int refine_ghost;
+int max_num_blocks;
+int target_active;
+int target_max;
+int target_min;
+int num_refine;
+int uniform_refine;
+int x_block_size, y_block_size, z_block_size;
+int num_vars;
+int comm_vars;
+int init_block_x, init_block_y, init_block_z;
+int reorder;
+int npx, npy, npz;
+int inbalance;
+int refine_freq;
+int report_diffusion;
+int checksum_freq;
+int stages_per_ts;
+int error_tol;
+int num_tsteps;
+int stencil;
+int report_perf;
+int plot_freq;
+int lb_opt;
+int block_change;
+int code;
+int permute;
+int nonblocking;
+int refine_ghost;
 
-extern int max_num_parents;
-extern int num_parents;
-extern int max_active_parent;
-extern int cur_max_level;
-extern int *num_blocks;
-extern int *local_num_blocks;
-extern int *block_start;
-extern int num_active;
-extern int max_active_block;
-extern int global_active;
-extern int x_block_half, y_block_half, z_block_half;
-extern double tol;
-extern double *grid_sum;
-extern int *p8, *p2;
-extern int mesh_size[3];
-extern int max_mesh_size;
-extern int *from, *to;
-extern int msg_len[3][4];
-extern int local_max_b;
-extern int global_max_b;
+int max_num_parents;
+int num_parents;
+int max_active_parent;
+int cur_max_level;
+int *num_blocks;
+int *local_num_blocks;
+int *block_start;
+int num_active;
+int max_active_block;
+int global_active;
+int x_block_half, y_block_half, z_block_half;
+double tol;
+double *grid_sum;
+int *p8, *p2;
+int mesh_size[3];
+int max_mesh_size;
+int *from, *to;
+int msg_len[3][4];
+int local_max_b;
+int global_max_b;
 
-extern int num_objects;
+int num_objects;
 typedef struct {
    int type;
    int bounce;
@@ -131,11 +131,11 @@ typedef struct {
    double orig_size[3];
    double inc[3];
 } object;
-extern object *objects;
+object *objects;
 
-extern int num_dots;
-extern int max_num_dots;
-extern int max_active_dot;
+int num_dots;
+int max_num_dots;
+int max_active_dot;
 typedef struct {
    int cen[3];
    int number;
@@ -143,6 +143,6 @@ typedef struct {
    int proc;
    int new_proc;
 } dot;
-extern dot *dots;
+dot *dots;
 
 #endif
