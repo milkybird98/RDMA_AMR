@@ -24,8 +24,6 @@
 //
 // ************************************************************************
 
-#ifndef COMM_H
-#define COMM_H
 
 #include "mpi.hpp"
 /* comm partner variables */
@@ -78,4 +76,3 @@ extern RDMA_Comm *comms;
 extern int *me;
 extern int *np;
 
-#endif

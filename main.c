@@ -29,9 +29,9 @@
 #include <string.h>
 #include <mpi.hpp>
 
-#include "block_o.h"
-#include "comm_o.h"
-#include "timer_o.h"
+#include "block.h"
+#include "comm.h"
+#include "timer.h"
 #include "proto.h"
 
 int main(int argc, char** argv)
