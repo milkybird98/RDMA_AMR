@@ -136,7 +136,7 @@ void comm_reverse_refine(void)
                 blocks[comm_block[dir][comm_index[dir][i]+n]].nei_refine[face];
          }
          if (nonblocking)
-            MRDMA_Send(&send_int[comm_index[dir][i]], comm_num[dir][i],
+            RDMA_Send(&send_int[comm_index[dir][i]], comm_num[dir][i],
                       R_TYPE_INT, comm_partner[dir][i]);
          else
             RDMA_Send(send_int, comm_num[dir][i], R_TYPE_INT,
