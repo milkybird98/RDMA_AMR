@@ -313,8 +313,8 @@ void comm_parent_proc(void)
       if(count >= par_p1.num_comm_part) break;
       for(which=0;which<par_p1.num_comm_part;which++){
          if(rev_status[which]) continue;
-         int rc = RDMA_Irecv(&recv_int[par_p.index[which]], par_p.comm_num[which], R_TYPE_INT,
-                  par_p.comm_part[which]);
+         int rc = RDMA_Irecv(&recv_int[par_p1.index[which]], par_p1.comm_num[which], R_TYPE_INT,
+                  par_p1.comm_part[which]);
 
          if(rc == 0){
             rev_status[which] = 1;
