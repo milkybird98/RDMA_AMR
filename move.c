@@ -25,7 +25,7 @@
 // ************************************************************************
 
 #include <stdio.h>
-#include <mpi.h>
+#include <mpi.hpp>
 #include <math.h>
 
 #include "block.h"

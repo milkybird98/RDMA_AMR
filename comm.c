@@ -26,7 +26,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <mpi.h>
+#include <mpi.hpp>
 
 #include "block.h"
 #include "comm.h"
