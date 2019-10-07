@@ -195,7 +195,7 @@ int main(int argc, char** argv)
       params[33] = nonblocking;
       params[34] = refine_ghost;
 
-      RDMA_Bcast(params, 35, R_TYPE_INTEGER, 0);
+      RDMA_Bcast(params, 35, R_TYPE_INT, 0);
 
       objs = (double *) ma_malloc(14*num_objects*sizeof(double),
                                   __FILE__, __LINE__);
@@ -219,7 +219,7 @@ int main(int argc, char** argv)
       RDMA_Bcast(objs, 14*num_objects, R_TYPE_DOUBLE, 0);
       free(objs);
    } else {
-      RDMA_Bcast(params, 35, R_TYPE_INTEGER, 0);
+      RDMA_Bcast(params, 35, R_TYPE_INT, 0);
       max_num_blocks = params[ 0];
       target_active = params[ 1];
       num_refine = params[ 2];

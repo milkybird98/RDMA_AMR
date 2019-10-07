@@ -47,7 +47,7 @@ void refine(int ts)
    t1 = timer();
 
    t2 = timer();
-   RDMA_Allreduce(local_num_blocks, num_blocks, (num_refine+1), R_TYPE_INTEGER,
+   RDMA_Allreduce(local_num_blocks, num_blocks, (num_refine+1), R_TYPE_INT,
                  R_OP_SUM);
    timer_refine_sy += timer() - t2;
    t4 += timer() - t2;
@@ -96,9 +96,9 @@ void refine(int ts)
 
       t2 = timer();
       sum_b = num_active + 7*num_split + 1;
-      RDMA_Allreduce(&sum_b, &max_b, 1, R_TYPE_INTEGER, R_OP_MAX);
+      RDMA_Allreduce(&sum_b, &max_b, 1, R_TYPE_INT, R_OP_MAX);
       sum_b = num_parents + num_split;
-      RDMA_Allreduce(&sum_b, &min_b, 1, R_TYPE_INTEGER, R_OP_MAX);
+      RDMA_Allreduce(&sum_b, &min_b, 1, R_TYPE_INT, R_OP_MAX);
       if (max_b > ((int) (0.75*((double) max_num_blocks))) ||
           min_b >= (max_num_parents-1)) {
          redistribute_blocks(&tp1, &tm1, &tu1, &t3, &nm_r, num_split);
@@ -134,7 +134,7 @@ void refine(int ts)
       check_buff_size();
 
       t2 = timer();
-      RDMA_Allreduce(local_num_blocks, num_blocks, (num_refine+1), R_TYPE_INTEGER,
+      RDMA_Allreduce(local_num_blocks, num_blocks, (num_refine+1), R_TYPE_INT,
                     R_OP_SUM);
       timer_refine_sy += timer() - t2;
       t4 += timer() - t2;
@@ -142,10 +142,10 @@ void refine(int ts)
          t2 = timer();
          if (num_active > local_max_b)
             local_max_b = num_active;
-         RDMA_Allreduce(&num_active, &min_b, 1, R_TYPE_INTEGER, R_OP_MIN);
-         RDMA_Allreduce(&num_active, &max_b, 1, R_TYPE_INTEGER, R_OP_MAX);
-         RDMA_Allreduce(&num_active, &sum_b, 1, R_TYPE_INTEGER, R_OP_SUM);
-         RDMA_Allreduce(&local_max_b, &global_max_b, 1, R_TYPE_INTEGER, R_OP_MAX);
+         RDMA_Allreduce(&num_active, &min_b, 1, R_TYPE_INT, R_OP_MIN);
+         RDMA_Allreduce(&num_active, &max_b, 1, R_TYPE_INT, R_OP_MAX);
+         RDMA_Allreduce(&num_active, &sum_b, 1, R_TYPE_INT, R_OP_SUM);
+         RDMA_Allreduce(&local_max_b, &global_max_b, 1, R_TYPE_INT, R_OP_MAX);
          t4 += timer() - t2;
          ratio = ((double) (max_b - min_b)*num_pes)/((double) sum_b);
          if (!uniform_refine && max_b > (min_b + 1) &&
@@ -159,7 +159,7 @@ void refine(int ts)
 
             t2 = timer();
             RDMA_Allreduce(local_num_blocks, num_blocks, (num_refine+1),
-                          R_TYPE_INTEGER, R_OP_SUM);
+                          R_TYPE_INT, R_OP_SUM);
             timer_refine_sy += timer() - t2;
             t4 += timer() - t2;
          }
@@ -200,12 +200,12 @@ void refine(int ts)
    t2 = timer();
    if (num_active > local_max_b)
       local_max_b = num_active;
-   RDMA_Allreduce(&num_active, &min_b, 1, R_TYPE_INTEGER, R_OP_MIN);
-   RDMA_Allreduce(&num_active, &max_b, 1, R_TYPE_INTEGER, R_OP_MAX);
-   RDMA_Allreduce(&num_active, &sum_b, 1, R_TYPE_INTEGER, R_OP_SUM);
-   RDMA_Allreduce(&local_max_b, &global_max_b, 1, R_TYPE_INTEGER, R_OP_MAX);
+   RDMA_Allreduce(&num_active, &min_b, 1, R_TYPE_INT, R_OP_MIN);
+   RDMA_Allreduce(&num_active, &max_b, 1, R_TYPE_INT, R_OP_MAX);
+   RDMA_Allreduce(&num_active, &sum_b, 1, R_TYPE_INT, R_OP_SUM);
+   RDMA_Allreduce(&local_max_b, &global_max_b, 1, R_TYPE_INT, R_OP_MAX);
    i = nm_r + nm_c + nm_t;
-   RDMA_Allreduce(&i, &num_split, 1, R_TYPE_INTEGER, R_OP_SUM);
+   RDMA_Allreduce(&i, &num_split, 1, R_TYPE_INT, R_OP_SUM);
    for (j = 0; j <= num_refine; j++) {
       if (!j)
          global_active = num_blocks[0];
@@ -232,7 +232,7 @@ void refine(int ts)
 
          t2 = timer();
          RDMA_Allreduce(local_num_blocks, num_blocks, (num_refine+1),
-                       R_TYPE_INTEGER, R_OP_SUM);
+                       R_TYPE_INT, R_OP_SUM);
          timer_refine_sy += timer() - t2;
          t4 += timer() - t2;
       }
@@ -343,7 +343,7 @@ int refine_level(void)
             }
          }
 
-         RDMA_Allreduce(&lchange, &change, 1, R_TYPE_INTEGER, R_OP_SUM);
+         RDMA_Allreduce(&lchange, &change, 1, R_TYPE_INT, R_OP_SUM);
 
          // Communicate these changes if any made
          if (change) {
@@ -399,7 +399,7 @@ int refine_level(void)
                      }
          }
 
-         RDMA_Allreduce(&lchange, &change, 1, R_TYPE_INTEGER, R_OP_SUM);
+         RDMA_Allreduce(&lchange, &change, 1, R_TYPE_INT, R_OP_SUM);
 
          // Communicate these changes of any parent that can not refine
          if (change) {
@@ -484,7 +484,7 @@ void redistribute_blocks(double *tp, double *tm, double *tu, double *time,
       bin[i] = 0;
    bin[my_pe] = num_split;
 
-   RDMA_Allreduce(bin, gbin, num_pes, R_TYPE_INTEGER, R_OP_SUM);
+   RDMA_Allreduce(bin, gbin, num_pes, R_TYPE_INT, R_OP_SUM);
 
    for (sum = i = 0; i < num_pes; i++) {
       from[i] = 0;
@@ -495,7 +495,7 @@ void redistribute_blocks(double *tp, double *tm, double *tu, double *time,
       bin[i] = 0;
    bin[my_pe] = max_num_parents - num_parents - 1 - num_split;
 
-   RDMA_Allreduce(bin, space, num_pes, R_TYPE_INTEGER, R_OP_SUM);
+   RDMA_Allreduce(bin, space, num_pes, R_TYPE_INT, R_OP_SUM);
 
    for (in = 0; in < sorted_index[num_refine+1]; in++)
       blocks[sorted_list[in].n].new_proc = -1;
@@ -565,10 +565,10 @@ void redistribute_blocks(double *tp, double *tm, double *tu, double *time,
             else
                blocks[pp->child[i]].new_proc = my_pe;
 
-   RDMA_Allreduce(&m, &n, 1, R_TYPE_INTEGER, R_OP_SUM);
+   RDMA_Allreduce(&m, &n, 1, R_TYPE_INT, R_OP_SUM);
 
    if (n) {
-      RDMA_Allreduce(&my_active, &sum, 1, R_TYPE_INTEGER, R_OP_MAX);
+      RDMA_Allreduce(&my_active, &sum, 1, R_TYPE_INT, R_OP_MAX);
 
       if (sum > ((int) (0.75*((double) max_num_blocks)))) {
          // even up the expected number of blocks per processor
@@ -576,7 +576,7 @@ void redistribute_blocks(double *tp, double *tm, double *tu, double *time,
             bin[i] = 0;
          bin[my_pe] = my_active;
 
-         RDMA_Allreduce(bin, gbin, num_pes, R_TYPE_INTEGER, R_OP_SUM);
+         RDMA_Allreduce(bin, gbin, num_pes, R_TYPE_INT, R_OP_SUM);
 
          for (sum = i = 0; i < num_pes; i++)
             sum += gbin[i];
@@ -615,7 +615,7 @@ void redistribute_blocks(double *tp, double *tm, double *tu, double *time,
 
       *time = timer() - t1;
 
-      RDMA_Alltoall(from, 1, R_TYPE_INTEGER, to, 1, R_TYPE_INTEGER);
+      RDMA_Alltoall(from, 1, R_TYPE_INT, to, 1, R_TYPE_INT);
       move_blocks(tp, tm, tu);
    } else
       *time = timer() - t1;

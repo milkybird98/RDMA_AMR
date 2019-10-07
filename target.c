@@ -56,7 +56,7 @@ int reduce_blocks()
          if ((pp = &parents[p])->number >= 0)
             if (pp->level == l)
                bin[my_pe]++;
-      RDMA_Allreduce(bin, gbin, num_pes, R_TYPE_INTEGER, R_OP_SUM);
+      RDMA_Allreduce(bin, gbin, num_pes, R_TYPE_INT, R_OP_SUM);
       for (num_parents = i = 0; i < num_pes; i++)
          num_parents += gbin[i];
 
@@ -133,7 +133,7 @@ void add_blocks()
          for (i = 0; i < num_pes; i++)
             bin[i] = 0;
          bin[my_pe] = local_num_blocks[l];
-         RDMA_Allreduce(bin, gbin, num_pes, R_TYPE_INTEGER, R_OP_SUM);
+         RDMA_Allreduce(bin, gbin, num_pes, R_TYPE_INT, R_OP_SUM);
 
          while (split < num_split)
             for (i = 0; i < num_pes; i++)
@@ -166,7 +166,7 @@ void add_blocks()
       t2 = timer();
       split_blocks();
       t3 += timer() - t2;
-      RDMA_Allreduce(local_num_blocks, num_blocks, (num_refine+1), R_TYPE_INTEGER,
+      RDMA_Allreduce(local_num_blocks, num_blocks, (num_refine+1), R_TYPE_INT,
                     R_OP_SUM);
    }
    timer_target_ab += timer() - t1;
