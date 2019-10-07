@@ -24,6 +24,9 @@
 //
 // ************************************************************************
 
+#ifndef BLOCK_H
+#define BLOCK_H
+
 typedef struct {
    int number;
    int level;
@@ -141,3 +144,5 @@ typedef struct {
    int new_proc;
 } dot;
 dot *dots;
+
+#endif

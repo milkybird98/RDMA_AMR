@@ -24,6 +24,9 @@
 //
 // ************************************************************************
 
+#ifndef COMM_H
+#define COMM_H
+
 /* comm partner variables */
 double *send_buff, *recv_buff;    /* use in comm and for balancing blocks */
 
@@ -73,3 +76,5 @@ int *bin,
 RDMA_Comm *comms;
 int *me;
 int *np;
+
+#endif

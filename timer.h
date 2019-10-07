@@ -24,6 +24,9 @@
 //
 // ************************************************************************
 
+#ifndef TIMER_H
+#define TIMER_H
+
 double average[128];
 double stddev[128];
 double minimum[128];
@@ -115,3 +118,5 @@ double size_malloc;
 int counter_malloc_init;
 double size_malloc_init;
 int total_red;
+
+#endif

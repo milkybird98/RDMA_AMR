@@ -24,6 +24,9 @@
 //
 // ************************************************************************
 
+#ifndef PLOT_VARS_H
+#define PLOT_VARS_H
+
 int dir;
 double plane;
 char infile[1024];
@@ -58,3 +61,5 @@ int mesh_k;
 int **mesh;
 int ***mesh3;
 double *ci, *cj, *ck;
+
+#endif

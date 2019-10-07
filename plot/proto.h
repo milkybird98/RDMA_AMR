@@ -24,6 +24,9 @@
 //
 // ************************************************************************
 
+#ifndef PLOT_PROTO_H
+#define PLOT_PROTO_H
+
 void print_help_message(void);
 int check_input(void);
 void read_input(void);
@@ -31,3 +34,5 @@ void sort_data(void);
 void write_genesis(void);
 void sort_data_3d(void);
 void write_genesis_3d(void);
+
+#endif
