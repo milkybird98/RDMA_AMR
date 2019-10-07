@@ -545,7 +545,7 @@ void move_dots(int div, int fact)
 
    while(1){
       if(count >= nr) break;
-      for (d = which = 0; which < nr; which++) {
+      for (d = which = 0; which < fact; which++) {
          if(recv_status[which] != 0) continue;
 
          int rc = RDMA_Irecv(&recv_int[off[which]], 6*gbin[which], R_TYPE_INT, partner, comms[div]);
@@ -619,7 +619,7 @@ void move_dots_back()
 
    while(1){
       if (count >= nr) break;
-      for (which = 0; which < nr; which++) {
+      for (which = 0; which < num_pes; which++) {
          //err = MPI_Waitany(num_pes, request, &which, &status);
          if (recv_status[which] != 0) continue;
          int res = RDMA_Irecv(&recv_int[gbin[which]], 2*from[which], R_TYPE_INT, which);
