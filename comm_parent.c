@@ -157,7 +157,7 @@ void comm_parent_reverse(void)
       }
    }
 
-   free(rev_status)
+   free(rev_status);
 
    /*
    if (nonblocking)
