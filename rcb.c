@@ -577,7 +577,7 @@ void move_dots(int div, int fact)
       }
    }
 
-   free(recv_status)
+   free(recv_status);
 }
 
 void move_dots_back()
