@@ -24,6 +24,7 @@
 //
 // ************************************************************************
 
+#include "mpi.hpp"
 
 /* comm partner variables */
 double *send_buff, *recv_buff;    /* use in comm and for balancing blocks */
