@@ -44,10 +44,6 @@ void comm_proc(void)
 
    for (dir = 0; dir < 3; dir++) {
       type = 10 + dir;
-      for (i = 0; i < num_comm_partners[dir]; i++)
-         MPI_Irecv(&recv_int[comm_index[dir][i]], comm_num[dir][i],
-                   R_TYPE_INTEGER, comm_partner[dir][i], type, MPI_COMM_WORLD,
-                   &request[i]);
 
       for (i = 0; i < num_comm_partners[dir]; i++) {
          if (nonblocking)
@@ -57,34 +53,66 @@ void comm_proc(void)
          for (n = 0; n < comm_num[dir][i]; n++)
             send_int[offset+n] =
                         blocks[comm_block[dir][comm_index[dir][i]+n]].new_proc;
+         // 由于RDMA不存在传统阻塞概念，所以无论是否有“nonblocking”，调用一致
          if (nonblocking)
-            MPI_Isend(&send_int[comm_index[dir][i]], comm_num[dir][i],
-                      R_TYPE_INTEGER, comm_partner[dir][i], type, MPI_COMM_WORLD,
-                      &s_req[i]);
+            RDMA_Send(&send_int[comm_index[dir][i]], comm_num[dir][i],
+                      R_TYPE_INT, comm_partner[dir][i]);
          else
-            MPI_Send(&send_int[0], comm_num[dir][i], R_TYPE_INTEGER,
-                     comm_partner[dir][i], type, MPI_COMM_WORLD);
+            RDMA_Send(&send_int[0], comm_num[dir][i], R_TYPE_INT,
+                     comm_partner[dir][i]);
       }
 
-      for (i = 0; i < num_comm_partners[dir]; i++) {
-         err = MPI_Waitany(num_comm_partners[dir], request, &which, &status);
-         for (n = 0; n < comm_num[dir][which]; n++) {
-            face = dir*2+(comm_face_case[dir][comm_index[dir][which]+n] >= 10);
-            bp = &blocks[comm_block[dir][comm_index[dir][which]+n]];
-            j = k = 0;
-            face_case = comm_face_case[dir][comm_index[dir][which]+n]%10;
-            if (face_case >= 6) {
-               j = ((face_case+2)/2)%2;
-               k = face_case%2;
+      // malloc一个状态表，用于标记该rank的数据是否被接收
+      int rev_status = (int *)malloc(sizeof(int)*num_comm_partners[dir]);
+      for(int i=0;i<num_comm_partners[dir];i++){
+         rev_status[i]=0;
+      }
+      // 用于记录已经接收多少个rank的数据
+      int count = 0;
+
+      while (1) {
+         //err = MPI_Waitany(num_comm_partners[dir], request, &which, &status);
+         // 如果全部接收，则已完成，退出循环
+         if(count >= num_comm_partners[dir]) break;
+
+         // 遍历所有rank，试图接收数据
+         for(which=0;which<num_comm_partners[dir];which++){
+            // 该rank的数据已经接收，跳过
+            if(rev_status[which]) continue;
+
+            // 试图接收数据
+            int rc = RDMA_Irecv(&recv_int[comm_index[dir][which]], comm_num[dir][which],
+            R_TYPE_INT, comm_partner[dir][which]);
+
+            // rc=0代表接收正常，进行数据处理
+            if(rc == 0){
+               // 将该rank的标志位置1
+               rev_status[which] = 1;
+               // count自增
+               count++;
+
+               for (n = 0; n < comm_num[dir][which]; n++) {
+                  face = dir*2+(comm_face_case[dir][comm_index[dir][which]+n] >= 10);
+                  bp = &blocks[comm_block[dir][comm_index[dir][which]+n]];
+                  j = k = 0;
+                  face_case = comm_face_case[dir][comm_index[dir][which]+n]%10;
+                  if (face_case >= 6) {
+                     j = ((face_case+2)/2)%2;
+                     k = face_case%2;
+                  }
+                  bp->nei[face][j][k] = -1 - recv_int[comm_index[dir][which]+n];
+               }
             }
-            bp->nei[face][j][k] = -1 - recv_int[comm_index[dir][which]+n];
          }
       }
 
+      // 释放状态表
+      free(rev_status);
+
       /*
-      if (nonblocking)
-         for (i = 0; i < num_comm_partners[dir]; i++)
-            err = MPI_Waitany(num_comm_partners[dir], s_req, &which, &status);
-      */
+       *  if (nonblocking)
+       *     for (i = 0; i < num_comm_partners[dir]; i++)
+       *        err = MPI_Waitany(num_comm_partners[dir], s_req, &which, &status);
+       */
    }
 }

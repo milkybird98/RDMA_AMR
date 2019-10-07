@@ -42,12 +42,9 @@ void comm_parent(void)
    int *send_int = (int *) send_buff;
    int *recv_int = (int *) recv_buff;
    parent *pp;
-   MPI_Status status;
+   //MPI_Status status;
 
    type = 20;
-   for (i = 0; i < par_p.num_comm_part; i++)
-      MPI_Irecv(&recv_int[par_p.index[i]], par_p.comm_num[i], R_TYPE_INTEGER,
-                 par_p.comm_part[i], type, MPI_COMM_WORLD, &request[i]);
 
    for (i = 0; i < par_b.num_comm_part; i++) {
       if (nonblocking)
@@ -61,29 +58,52 @@ void comm_parent(void)
          else
             send_int[offset+j] = blocks[par_b.comm_b[par_b.index[i]+j]].refine;
       if (nonblocking)
-         MPI_Isend(&send_int[par_b.index[i]], par_b.comm_num[i], R_TYPE_INTEGER,
-                   par_b.comm_part[i], type, MPI_COMM_WORLD, &s_req[i]);
+         RDMA_Send(&send_int[par_b.index[i]], par_b.comm_num[i], R_TYPE_INT,
+                   par_b.comm_part[i]);
       else
-         MPI_Send(&send_int[0], par_b.comm_num[i], R_TYPE_INTEGER,
-                  par_b.comm_part[i], type, MPI_COMM_WORLD);
+         RDMA_Send(&send_int[0], par_b.comm_num[i], R_TYPE_INT,
+                  par_b.comm_part[i]);
    }
 
-   for (i = 0; i < par_p.num_comm_part; i++) {
-      MPI_Waitany(par_p.num_comm_part, request, &which, &status);
-      for (j = 0; j < par_p.comm_num[which]; j++)
-         if (recv_int[par_p.index[which]+j] > -1) {
-            pp = &parents[par_p.comm_p[par_p.index[which]+j]];
-            pp->refine = 0;
-            for (b = 0; b < 8; b++)
-               if (pp->child_node[b] == my_pe && pp->child[b] >= 0 &&
-                   blocks[pp->child[b]].refine == -1)
-                  blocks[pp->child[b]].refine = 0;
+   int rev_status = (int *)malloc(sizeof(int)*par_p.num_comm_part);
+   for(int i=0;i<par_p.num_comm_part;i++){
+      rev_status[i]=0;
+   }
+
+   int count = 0;
+
+   //for (i = 0; i < par_p.num_comm_part; i++) {
+   while (1) {
+      if(count >= par_p.num_comm_part) break;
+      for(which=0;which<par_p.num_comm_part;which++){
+         if(rev_status[which]) continue;
+         int rc = RDMA_Irecv(&recv_int[par_p.index[which]], par_p.comm_num[which], R_TYPE_INT,
+                  par_p.comm_part[which]);
+
+         if(rc == 0){
+            rev_status[which] = 1;
+            count++;
+
+            for (j = 0; j < par_p.comm_num[which]; j++)
+               if (recv_int[par_p.index[which]+j] > -1) {
+                  pp = &parents[par_p.comm_p[par_p.index[which]+j]];
+                  pp->refine = 0;
+                  for (b = 0; b < 8; b++)
+                     if (pp->child_node[b] == my_pe && pp->child[b] >= 0 &&
+                        blocks[pp->child[b]].refine == -1)
+                        blocks[pp->child[b]].refine = 0;
+            }
          }
+      }
    }
 
+      free(rev_status);
+
+/*
    if (nonblocking)
       for (i = 0; i < par_b.num_comm_part; i++)
          MPI_Waitany(par_b.num_comm_part, s_req, &which, &status);
+         */
 }
 
 void comm_parent_reverse(void)
@@ -94,9 +114,6 @@ void comm_parent_reverse(void)
    MPI_Status status;
 
    type = 21;
-   for (i = 0; i < par_b.num_comm_part; i++)
-      MPI_Irecv(&recv_int[par_b.index[i]], par_b.comm_num[i], R_TYPE_INTEGER,
-                 par_b.comm_part[i], type, MPI_COMM_WORLD, &request[i]);
 
    for (i = 0; i < par_p.num_comm_part; i++) {
       if (nonblocking)
@@ -106,25 +123,47 @@ void comm_parent_reverse(void)
       for (j = 0; j < par_p.comm_num[i]; j++)
          send_int[offset+j] = parents[par_p.comm_p[par_p.index[i]+j]].refine;
       if (nonblocking)
-         MPI_Isend(&send_int[par_p.index[i]], par_p.comm_num[i], R_TYPE_INTEGER,
-                   par_p.comm_part[i], type, MPI_COMM_WORLD, &s_req[i]);
+         RDMA_Send(&send_int[par_p.index[i]], par_p.comm_num[i], R_TYPE_INT,
+                   par_p.comm_part[i]);
       else
-         MPI_Send(&send_int[0], par_p.comm_num[i], R_TYPE_INTEGER,
-                  par_p.comm_part[i], type, MPI_COMM_WORLD);
+         RDMA_Send(&send_int[0], par_p.comm_num[i], R_TYPE_INT,
+                  par_p.comm_part[i]);
    }
 
-   for (i = 0; i < par_b.num_comm_part; i++) {
-      MPI_Waitany(par_b.num_comm_part, request, &which, &status);
-      for (j = 0; j < par_b.comm_num[which]; j++)
-         if (recv_int[par_b.index[which]+j] > -1 &&
-             par_b.comm_b[par_b.index[which]+j] >= 0)
-            if (blocks[par_b.comm_b[par_b.index[which]+j]].refine == -1)
-               blocks[par_b.comm_b[par_b.index[which]+j]].refine = 0;
+   int rev_status = (int *)malloc(sizeof(int)*par_b.num_comm_part);
+   for(int i=0;i<par_b.num_comm_part;i++){
+      rev_status[i]=0;
    }
 
+   int count = 0;
+
+   //for (i = 0; i < par_b.num_comm_part; i++) {
+   while (1) {
+      if(count >= par_b.num_comm_part) break;
+      for(which=0;which<par_b.num_comm_part;which++){
+         if(rev_status[which]) continue;
+         int rc = RDMA_Irecv(&recv_int[par_b.index[which]], par_b.comm_num[which], R_TYPE_INT,
+                  par_b.comm_part[which]);
+
+         if(rc == 0){
+            rev_status[which] = 1;  
+            count++;        
+            for (j = 0; j < par_b.comm_num[which]; j++)
+               if (recv_int[par_b.index[which]+j] > -1 &&
+                  par_b.comm_b[par_b.index[which]+j] >= 0)
+                  if (blocks[par_b.comm_b[par_b.index[which]+j]].refine == -1)
+                     blocks[par_b.comm_b[par_b.index[which]+j]].refine = 0;
+         }
+      }
+   }
+
+   free(rev_status)
+
+   /*
    if (nonblocking)
       for (i = 0; i < par_p.num_comm_part; i++)
          MPI_Waitany(par_p.num_comm_part, s_req, &which, &status);
+         */
 }
 
 void comm_parent_unrefine(void)
@@ -135,9 +174,6 @@ void comm_parent_unrefine(void)
    MPI_Status status;
 
    type = 22;
-   for (i = 0; i < par_b.num_comm_part; i++)
-      MPI_Irecv(&recv_int[par_b.index[i]], par_b.comm_num[i], R_TYPE_INTEGER,
-                 par_b.comm_part[i], type, MPI_COMM_WORLD, &request[i]);
 
    for (i = 0; i < par_p.num_comm_part; i++) {
       if (nonblocking)
@@ -147,24 +183,46 @@ void comm_parent_unrefine(void)
       for (j = 0; j < par_p.comm_num[i]; j++)
          send_int[offset+j] = parents[par_p.comm_p[par_p.index[i]+j]].refine;
       if (nonblocking)
-         MPI_Isend(&send_int[par_p.index[i]], par_p.comm_num[i], R_TYPE_INTEGER,
-                   par_p.comm_part[i], type, MPI_COMM_WORLD, &s_req[i]);
+         RDMA_Send(&send_int[par_p.index[i]], par_p.comm_num[i], R_TYPE_INT,
+                   par_p.comm_part[i]);
       else
-         MPI_Send(&send_int[0], par_p.comm_num[i], R_TYPE_INTEGER,
-                  par_p.comm_part[i], type, MPI_COMM_WORLD);
+         RDMA_Send(&send_int[0], par_p.comm_num[i], R_TYPE_INT,
+                  par_p.comm_part[i]);
    }
 
-   for (i = 0; i < par_b.num_comm_part; i++) {
-      MPI_Waitany(par_b.num_comm_part, request, &which, &status);
-      for (j = 0; j < par_b.comm_num[which]; j++)
-         if (par_b.comm_b[par_b.index[which]+j] >= 0)
-            blocks[par_b.comm_b[par_b.index[which]+j]].refine =
-                  recv_int[par_b.index[which]+j];
+   int rev_status = (int *)malloc(sizeof(int)*par_b.num_comm_part);
+   for(int i=0;i<par_p.num_comm_part;i++){
+      rev_status[i]=0;
    }
 
+   int count = 0;
+
+   //for (i = 0; i < par_b.num_comm_part; i++) {
+   while(1){
+      if(count >= par_b.num_comm_part) break;
+      for(which=0;which<par_b.num_comm_part;which++){
+         if(rev_status[which]) continue;
+         int rc = RDMA_Irecv(&recv_int[par_b.index[which]], par_b.comm_num[which], R_TYPE_INT,
+               par_b.comm_part[which]);
+
+         if(rc == 0){
+            rev_status[which] = 1;  
+            count++;
+            for (j = 0; j < par_b.comm_num[which]; j++)
+               if (par_b.comm_b[par_b.index[which]+j] >= 0)
+                  blocks[par_b.comm_b[par_b.index[which]+j]].refine =
+                        recv_int[par_b.index[which]+j];
+         }
+      }
+   }
+
+   free(rev_status);
+
+   /*
    if (nonblocking)
       for (i = 0; i < par_p.num_comm_part; i++)
          MPI_Waitany(par_p.num_comm_part, s_req, &which, &status);
+         */
 }
 
 // Communicate new proc to parents - coordinate properly
@@ -217,9 +275,11 @@ void comm_parent_proc(void)
    }
 
    type = 23;
+   /*
    for (i = 0; i < par_p.num_comm_part; i++)
-      MPI_Irecv(&recv_int[par_p.index[i]], par_p.comm_num[i], R_TYPE_INTEGER,
+      MPI_Irecv(&recv_int[par_p.index[i]], par_p.comm_num[i], R_TYPE_INT,
                  par_p.comm_part[i], type, MPI_COMM_WORLD, &request[i]);
+*/
 
    for (i = 0; i < par_b.num_comm_part; i++) {
       if (nonblocking)
@@ -234,40 +294,63 @@ void comm_parent_proc(void)
             send_int[offset+j] =
                                blocks[par_b.comm_b[par_b.index[i]+j]].new_proc;
       if (nonblocking)
-         MPI_Isend(&send_int[par_b.index[i]], par_b.comm_num[i], R_TYPE_INTEGER,
-                   par_b.comm_part[i], type, MPI_COMM_WORLD, &s_req[i]);
+         RDMA_Send(&send_int[par_b.index[i]], par_b.comm_num[i], R_TYPE_INT,
+                   par_b.comm_part[i]);
       else
-         MPI_Send(&send_int[0], par_b.comm_num[i], R_TYPE_INTEGER,
-                  par_b.comm_part[i], type, MPI_COMM_WORLD);
+         RDMA_Send(&send_int[0], par_b.comm_num[i], R_TYPE_INT,
+                  par_b.comm_part[i]);
    }
 
-   for (i = 0; i < par_p1.num_comm_part; i++) {
-      MPI_Waitany(par_p1.num_comm_part, request, &which, &status);
-      for (j = 0; j < par_p1.comm_num[which]; j++)
-         if (recv_int[par_p1.index[which]+j] > -1) {
-            pp = &parents[par_p1.comm_p[par_p1.index[which]+j]];
-            if (pp->child_node[par_p1.comm_c[par_p1.index[which]+j]] !=
-                  recv_int[par_p1.index[which]+j]) {
-               del_par_list(&par_p, par_p1.comm_p[par_p1.index[which]+j],
-                            par_p1.comm_b[par_p1.index[which]+j],
-                            par_p1.comm_c[par_p1.index[which]+j],
-                            par_p1.comm_part[which]);
-               if (recv_int[par_p1.index[which]+j] != my_pe) {
-                  add_par_list(&par_p, par_p1.comm_p[par_p1.index[which]+j],
-                               par_p1.comm_b[par_p1.index[which]+j],
-                               par_p1.comm_c[par_p1.index[which]+j],
-                               recv_int[par_p1.index[which]+j], 1);
-                  pp->child_node[par_p1.comm_c[par_p1.index[which]+j]] =
-                        recv_int[par_p1.index[which]+j];
-               } else
-                  pp->child_node[par_p1.comm_c[par_p1.index[which]+j]] = my_pe;
-            }
+   int rev_status = (int *)malloc(sizeof(int)*par_p1.num_comm_part);
+   for(int i=0;i<par_p1.num_comm_part;i++){
+      rev_status[i]=0;
+   }
+
+   int count = 0;
+
+   //for (i = 0; i < par_p1.num_comm_part; i++) {
+   while (1) {
+      if(count >= par_p1.num_comm_part) break;
+      for(which=0;which<par_p1.num_comm_part;which++){
+         if(rev_status[which]) continue;
+         int rc = RDMA_Irecv(&recv_int[par_p.index[which]], par_p.comm_num[which], R_TYPE_INT,
+                  par_p.comm_part[which]);
+
+         if(rc == 0){
+            rev_status[which] = 1;
+            count++;
+
+            for (j = 0; j < par_p1.comm_num[which]; j++)
+               if (recv_int[par_p1.index[which]+j] > -1) {
+                  pp = &parents[par_p1.comm_p[par_p1.index[which]+j]];
+                  if (pp->child_node[par_p1.comm_c[par_p1.index[which]+j]] !=
+                        recv_int[par_p1.index[which]+j]) {
+                     del_par_list(&par_p, par_p1.comm_p[par_p1.index[which]+j],
+                                 par_p1.comm_b[par_p1.index[which]+j],
+                                 par_p1.comm_c[par_p1.index[which]+j],
+                                 par_p1.comm_part[which]);
+                     if (recv_int[par_p1.index[which]+j] != my_pe) {
+                        add_par_list(&par_p, par_p1.comm_p[par_p1.index[which]+j],
+                                    par_p1.comm_b[par_p1.index[which]+j],
+                                    par_p1.comm_c[par_p1.index[which]+j],
+                                    recv_int[par_p1.index[which]+j], 1);
+                        pp->child_node[par_p1.comm_c[par_p1.index[which]+j]] =
+                              recv_int[par_p1.index[which]+j];
+                     } else
+                        pp->child_node[par_p1.comm_c[par_p1.index[which]+j]] = my_pe;
+                  }
+               }
          }
+      }
    }
 
+   free(rev_status);
+
+/*
    if (nonblocking)
       for (i = 0; i < par_b.num_comm_part; i++)
          MPI_Waitany(par_b.num_comm_part, s_req, &which, &status);
+         */
 }
 
 // Below are routines for adding and deleting from arrays used above

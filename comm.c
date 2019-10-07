@@ -56,9 +56,11 @@ void comm(int start, int num_comm, int stage)
       type = dir;
       t1 = timer();
       for (i = 0; i < num_comm_partners[dir]; i++) {
-         MPI_Irecv(&recv_buff[comm_recv_off[dir][comm_index[dir][i]]],
-                   recv_size[dir][i], R_TYPE_DOUBLE,
-                   comm_partner[dir][i], type, MPI_COMM_WORLD, &request[i]);
+         /*
+          *MPI_Irecv(&recv_buff[comm_recv_off[dir][comm_index[dir][i]]],
+          *         recv_size[dir][i], R_TYPE_DOUBLE,
+          *        comm_partner[dir][i], type, MPI_COMM_WORLD, &request[i]);
+          */
          counter_halo_recv[dir]++;
          size_mesg_recv[dir] += (double) recv_size[dir][i]*sizeof(double);
       }
@@ -85,12 +87,11 @@ void comm(int start, int num_comm, int stage)
          counter_face_send[dir] += comm_num[dir][i];
          t3 = timer();
          if (nonblocking)
-            MPI_Isend(&send_buff[comm_send_off[dir][comm_index[dir][i]]],
-                      send_size[dir][i], R_TYPE_DOUBLE, comm_partner[dir][i],
-                      type, MPI_COMM_WORLD, &s_req[i]);
+            RDMA_Send(&send_buff[comm_send_off[dir][comm_index[dir][i]]],
+                      send_size[dir][i], R_TYPE_DOUBLE, comm_partner[dir][i]);
          else
-            MPI_Send(send_buff, send_size[dir][i], R_TYPE_DOUBLE,
-                     comm_partner[dir][i], type, MPI_COMM_WORLD);
+            RDMA_Send(send_buff, send_size[dir][i], R_TYPE_DOUBLE,
+                     comm_partner[dir][i]);
          counter_halo_send[dir]++;
          size_mesg_send[dir] += (double) send_size[dir][i]*sizeof(double);
          t4 = timer();
@@ -146,27 +147,54 @@ void comm(int start, int num_comm, int stage)
             }
       }
 
-      for (i = 0; i < num_comm_partners[dir]; i++) {
-         t2 = timer();
-         MPI_Waitany(num_comm_partners[dir], request, &which, &status);
-         t3 = timer();
-         for (n = 0; n < comm_num[dir][which]; n++)
-          unpack_face(&recv_buff[comm_recv_off[dir][comm_index[dir][which]+n]],
-                      comm_block[dir][comm_index[dir][which]+n],
-                      comm_face_case[dir][comm_index[dir][which]+n],
-                      dir, start, num_comm);
-         counter_face_recv[dir] += comm_num[dir][which];
-         t4 = timer();
-         timer_comm_wait[dir] += t3 - t2;
-         timer_comm_unpack[dir] += t4 - t3;
+      int rev_status = (int *)malloc(sizeof(int)*num_comm_partners[dir]);
+      for(int i=0;i<num_comm_partners[dir];i++){
+         rev_status[i]=0;
       }
 
+      int count = 0;
+
+      //for (i = 0; i < num_comm_partners[dir]; i++) {
+      while(1){
+
+         if(count >= num_comm_partners[dir]) break;
+         t2 = timer();
+         for(which=0;which<num_comm_partners[dir];which++){
+            if(rev_status[which]) continue;
+            int rc = RDMA_Irecv(&recv_buff[comm_recv_off[dir][comm_index[dir][which]]],
+                     recv_size[dir][which], R_TYPE_DOUBLE,
+                     comm_partner[dir][which]);
+
+            if(rc == 0){
+               rev_status[which] = 1;
+               count++;           
+
+               //MPI_Waitany(num_comm_partners[dir], request, &which, &status);
+               t3 = timer();
+               for (n = 0; n < comm_num[dir][which]; n++)
+               unpack_face(&recv_buff[comm_recv_off[dir][comm_index[dir][which]+n]],
+                           comm_block[dir][comm_index[dir][which]+n],
+                           comm_face_case[dir][comm_index[dir][which]+n],
+                           dir, start, num_comm);
+               counter_face_recv[dir] += comm_num[dir][which];
+               t4 = timer();
+               timer_comm_wait[dir] += t3 - t2;
+               timer_comm_unpack[dir] += t4 - t3;
+               t2 = timer();
+            }
+         }
+      }
+
+      free(rev_status);
+
       if (nonblocking) {
+         /*
          t2 = timer();
          for (i = 0; i < num_comm_partners[dir]; i++)
-            MPI_Waitany(num_comm_partners[dir], s_req, &which, &status);
+            //MPI_Waitany(num_comm_partners[dir], s_req, &which, &status);
          t3 = timer();
          timer_comm_wait[dir] += t3 - t2;
+         */
       }
       timer_comm_dir[dir] += timer() - t1;
    }

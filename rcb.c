@@ -104,11 +104,11 @@ void load_balance(void)
       }
 
    num_moved_lb += m;
-   RDMA_Allreduce(&m, &n, 1, R_TYPE_INTEGER, R_OP_SUM);
+   RDMA_Allreduce(&m, &n, 1, R_TYPE_INT, R_OP_SUM);
    t4 = timer();
    t2 = t4 - t1;
    if (n) {  // Only move dots and blocks if there is something to move
-      RDMA_Alltoall(to, 1, R_TYPE_INTEGER, from, 1, R_TYPE_INTEGER);
+      RDMA_Alltoall(to, 1, R_TYPE_INT, from, 1, R_TYPE_INT);
 
       move_dots_back();
       t5 = timer();
@@ -157,16 +157,13 @@ void exchange(double *tp, double *tm, double *tu)
          while (s < from[start[l]] || f < to[start[l]]) {
             if (f < to[start[l]]) {
                if (num_active < max_num_blocks) {
-                  MPI_Irecv(recv_buff, block_size, R_TYPE_DOUBLE, start[l], type,
-                            MPI_COMM_WORLD, request);
                   rb = 1;
                } else
                   rb = 0;
-               MPI_Send(&rb, 1, R_TYPE_INTEGER, start[l], type1, MPI_COMM_WORLD);
+               RDMA_Send(&rb, 1, R_TYPE_INT, start[l]);
             }
             if (s < from[start[l]]) {
-               MPI_Recv(&i, 1, R_TYPE_INTEGER, start[l], type1,
-                        MPI_COMM_WORLD, &status);
+               RDMA_Recv(&i, 1, R_TYPE_INT, start[l]);
                if (i) {
                   while (sp < max_active_block && blocks[sp].number < 0 ||
                          (blocks[sp].number >= 0 &&
@@ -180,8 +177,7 @@ void exchange(double *tp, double *tm, double *tu)
                   local_num_blocks[blocks[sp].level]--;
                   del_sorted_list(blocks[sp].number, blocks[sp].level);
                   blocks[sp].number = -1;
-                  MPI_Send(send_buff, block_size, R_TYPE_DOUBLE, start[l], type,
-                           MPI_COMM_WORLD);
+                  RDMA_Send(send_buff, block_size, R_TYPE_DOUBLE, start[l]);
                   if (fp > sp)
                      fp = sp;
                   sp++;
@@ -202,7 +198,9 @@ void exchange(double *tp, double *tm, double *tu)
                         while (blocks[fp].number >= 0)
                            fp++;
                      }
-                  MPI_Wait(request, &status);
+                  //MPI_Wait(request, &status);
+                  RDMA_Recv(recv_buff, block_size, R_TYPE_DOUBLE, start[l]);
+
                   t2 = timer();
                   unpack_block(fp);
                   t4 += timer() - t2;
@@ -267,7 +265,7 @@ void sort(int div, int fact, int dir)
    int i, j, sum, total_dots, part, dir1, point1, extra1,
        bin1[fact], point[fact], extra[fact];
 
-   MPI_Allreduce(&num_dots, &total_dots, 1, R_TYPE_INTEGER, R_OP_SUM, comms[div]);
+   RDMA_Allreduce(&num_dots, &total_dots, 1, R_TYPE_INT, R_OP_SUM, comms[div]);
 
    for (i = 0; i < mesh_size[dir]; i++)
       bin[i] = 0;
@@ -276,7 +274,7 @@ void sort(int div, int fact, int dir)
       if (dots[i].number >= 0)
          bin[dots[i].cen[dir]]++;
 
-   MPI_Allreduce(bin, gbin, mesh_size[dir], R_TYPE_INTEGER, R_OP_SUM, comms[div]);
+   RDMA_Allreduce(bin, gbin, mesh_size[dir], R_TYPE_INT, R_OP_SUM, comms[div]);
 
    part = (total_dots+fact-1)/fact;
    for (sum = j = i = 0; i < mesh_size[dir] && j < (fact-1); i++) {
@@ -313,7 +311,7 @@ void sort(int div, int fact, int dir)
          for (i = 0; i < max_active_dot; i++)
             if (dots[i].number >= 0 && dots[i].new_proc == (-1-j))
                bin[dots[i].cen[dir1]]++;
-         RDMA_Allreduce(bin, gbin, mesh_size[dir1], R_TYPE_INTEGER, R_OP_SUM,
+         RDMA_Allreduce(bin, gbin, mesh_size[dir1], R_TYPE_INT, R_OP_SUM,
                        comms[div]);
          part = bin1[j] - extra[j];
          for (sum = i = 0; i < mesh_size[dir1]; i++) {
@@ -343,7 +341,7 @@ void sort(int div, int fact, int dir)
             for (i = 0; i < max_active_dot; i++)
                if (dots[i].number >= 0 && dots[i].new_proc == (-1-j))
                   bin[dots[i].cen[dir1]]++;
-            RDMA_Allreduce(bin, gbin, mesh_size[dir1], R_TYPE_INTEGER, R_OP_SUM);
+            RDMA_Allreduce(bin, gbin, mesh_size[dir1], R_TYPE_INT, R_OP_SUM, comms[div]);
             part = bin1[j] - extra1;
             for (sum = i = 0; i < mesh_size[dir1]; i++) {
                sum += gbin[i];
@@ -481,28 +479,39 @@ void move_dots(int div, int fact)
          bin[dots[d].new_proc]++;
 
    type = 30;
+   /*
    for (i = 0; i < fact; i++)
       if (i != mg) {
          partner = me[div]%sg + i*sg;
-         MPI_Irecv(&gbin[i], 1, R_TYPE_INTEGER, partner, type, comms[div],
+         MPI_Irecv(&gbin[i], 1, R_TYPE_INT, partner, comms[div],
                    &request[i]);
       }
+      */
 
    for (i = 0; i < fact; i++)
       if (i != mg) {
          partner = me[div]%sg + i*sg;
-         MPI_Send(&bin[i], 1, R_TYPE_INTEGER, partner, type, comms[div]);
+         RDMA_Send(&bin[i], 1, R_TYPE_INT, partner, comms[div]);
       }
+
+   int *recv_status = (int *)malloc(fact*sizeof(int));
+   for(int i = 0; i<fact; i++){
+      recv_status[i] = -1;
+   }
 
    type = 31;
    off[0] = 0;
    for (nr = i = 0; i < fact; i++)
       if (i != mg) {
-         err = MPI_Wait(&request[i], &status);
+         //err = MPI_Wait(&request[i], &status);
+         partner = me[div]%sg + i*sg;
+         RDMA_Recv(&gbin[i], 1, R_TYPE_INT, partner, comms[div]);
+         
          if (gbin[i] > 0) {
             partner = me[div]%sg + i*sg;
-            MPI_Irecv(&recv_int[off[i]], 6*gbin[i], R_TYPE_INTEGER, partner,
-                      type, comms[div], &request[i]);
+            //MPI_Irecv(&recv_int[off[i]], 6*gbin[i], R_TYPE_INT, partner,
+            //          type, comms[div], &request[i]);
+            recv_status[i] = 0;
             off[i+1] = off[i] + 6*gbin[i];
             nr++;
          } else {
@@ -529,31 +538,46 @@ void move_dots(int div, int fact)
             }
 
          partner = me[div]%sg + i*sg;
-         MPI_Send(send_int, 6*bin[i], R_TYPE_INTEGER, partner, type, comms[div]);
+         RDMA_Send(send_int, 6*bin[i], R_TYPE_INT, partner, comms[div]);
       }
 
-   for (d = i = 0; i < nr; i++) {
-      err = MPI_Waitany(fact, request, &which, &status);
-      for (j = off[which]; j < off[which+1]; ) {
-         for ( ; d < max_num_dots; d++)
-            if (dots[d].number < 0)
-               break;
-         if (d == max_num_dots) {
-            printf("%d ERROR: need more dots in move_dots %d %d\n",
-                   my_pe, max_num_dots, num_dots);
-            exit(-1);
+   int count = 0;
+
+   while(1){
+      if(count >= nr) break;
+      for (d = which = 0; which < nr; which++) {
+         if(recv_status[which] != 0) continue;
+
+         int rc = RDMA_Irecv(&recv_int[off[which]], 6*gbin[which], R_TYPE_INT, partner, comms[div]);
+         //err = MPI_Waitany(fact, request, &which, &status);
+
+         if (rc == 0){
+            recv_status[which] = 1;
+            count++;
+            for (j = off[which]; j < off[which+1]; ) {
+               for ( ; d < max_num_dots; d++)
+                  if (dots[d].number < 0)
+                     break;
+               if (d == max_num_dots) {
+                  printf("%d ERROR: need more dots in move_dots %d %d\n",
+                        my_pe, max_num_dots, num_dots);
+                  exit(-1);
+               }
+               dots[d].cen[0] = recv_int[j++];
+               dots[d].cen[1] = recv_int[j++];
+               dots[d].cen[2] = recv_int[j++];
+               dots[d].number = recv_int[j++];
+               dots[d].n = recv_int[j++];
+               dots[d].proc = recv_int[j++];
+               num_dots++;
+               if ((d+1) > max_active_dot)
+                  max_active_dot = d+1;
+            }
          }
-         dots[d].cen[0] = recv_int[j++];
-         dots[d].cen[1] = recv_int[j++];
-         dots[d].cen[2] = recv_int[j++];
-         dots[d].number = recv_int[j++];
-         dots[d].n = recv_int[j++];
-         dots[d].proc = recv_int[j++];
-         num_dots++;
-         if ((d+1) > max_active_dot)
-            max_active_dot = d+1;
       }
    }
+
+   free(recv_status)
 }
 
 void move_dots_back()
@@ -563,12 +587,18 @@ void move_dots_back()
    int *recv_int = (int *) recv_buff;
    MPI_Status status;
 
+   int *recv_status = (int *)malloc(num_pes*sizeof(int));
+   for(int i = 0;i<num_pes;i++){
+      recv_status[i] =-1;
+   }
+
    gbin[0] = 0;
    for (nr = i = 0; i < num_pes; i++)
       if (from[i] > 0) {
          gbin[i+1] = gbin[i] + 2*from[i];
-         MPI_Irecv(&recv_int[gbin[i]], 2*from[i], R_TYPE_INTEGER, i, 50,
-                   MPI_COMM_WORLD, &request[i]);
+         recv_status[i] = 0;
+         //MPI_Irecv(&recv_int[gbin[i]], 2*from[i], R_TYPE_INT, i, 50,
+         //          MPI_COMM_WORLD, &request[i]);
          nr++;
       } else {
          gbin[i+1] = gbin[i];
@@ -582,15 +612,28 @@ void move_dots_back()
                send_int[j++] = dots[d].n;
                send_int[j++] = my_pe;
             }
-         MPI_Send(send_int, 2*to[i], R_TYPE_INTEGER, i, 50, MPI_COMM_WORLD);
+         RDMA_Send(send_int, 2*to[i], R_TYPE_INT, i);
       }
 
-   for (i = 0; i < nr; i++) {
-      err = MPI_Waitany(num_pes, request, &which, &status);
-      for (j = 0; j < from[which]; j++)
-         blocks[recv_int[gbin[which]+2*j]].new_proc =
-               recv_int[gbin[which]+2*j+1];
+   int count = 0;
+
+   while(1){
+      if (count >= nr) break;
+      for (which = 0; which < nr; which++) {
+         //err = MPI_Waitany(num_pes, request, &which, &status);
+         if (recv_status[which] != 0) continue;
+         int res = MPI_Irecv(&recv_int[gbin[which]], 2*from[which], R_TYPE_INT, which);
+         if(res == 0){
+            count++;
+            recv_status[which]=1;
+            for (j = 0; j < from[which]; j++)
+               blocks[recv_int[gbin[which]+2*j]].new_proc =
+                     recv_int[gbin[which]+2*j+1];
+         }
+      }
    }
+
+   free(recv_status);
 }
 
 void move_blocks(double *tp, double *tm, double *tu)
@@ -691,7 +734,7 @@ void move_blocks(double *tp, double *tm, double *tu)
       exchange(tp, tm, tu);
       for (n1 = i = 0; i < num_pes; i++)
          n1 += from[i];
-      RDMA_Allreduce(&n1, &n, 1, R_TYPE_INTEGER, R_OP_SUM);
+      RDMA_Allreduce(&n1, &n, 1, R_TYPE_INT, R_OP_SUM);
       j++;
    } while (n && j < 10);
 

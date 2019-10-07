@@ -43,11 +43,12 @@ void comm_refine(void)
 
    for (dir = 0; dir < 3; dir++) {
       type = 10 + dir;
+      /*
       for (i = 0; i < num_comm_partners[dir]; i++)
          MPI_Irecv(&recv_int[comm_index[dir][i]], comm_num[dir][i],
-                   R_TYPE_INTEGER, comm_partner[dir][i], type, MPI_COMM_WORLD,
+                   R_TYPE_INT, comm_partner[dir][i], type, MPI_COMM_WORLD,
                    &request[i]);
-
+      */
       for (i = 0; i < num_comm_partners[dir]; i++) {
          if (nonblocking)
             offset = comm_index[dir][i];
@@ -57,31 +58,54 @@ void comm_refine(void)
             send_int[offset+n] =
                           blocks[comm_block[dir][comm_index[dir][i]+n]].refine;
          if (nonblocking)
-            MPI_Isend(&send_int[comm_index[dir][i]], comm_num[dir][i],
-                      R_TYPE_INTEGER, comm_partner[dir][i], type, MPI_COMM_WORLD,
-                      &s_req[i]);
+            RDMA_Send(&send_int[comm_index[dir][i]], comm_num[dir][i],
+                      R_TYPE_INT, comm_partner[dir][i]);
          else
-            MPI_Send(&send_int[0], comm_num[dir][i], R_TYPE_INTEGER,
-                     comm_partner[dir][i], type, MPI_COMM_WORLD);
+            RDMA_Send(&send_int[0], comm_num[dir][i], R_TYPE_INT,
+                     comm_partner[dir][i]);
       }
 
-      for (i = 0; i < num_comm_partners[dir]; i++) {
-         err = MPI_Waitany(num_comm_partners[dir], request, &which, &status);
-         for (n = 0; n < comm_num[dir][which]; n++) {
-            face = dir*2+(comm_face_case[dir][comm_index[dir][which]+n] >= 10);
-            bp = &blocks[comm_block[dir][comm_index[dir][which]+n]];
-            if (recv_int[comm_index[dir][which]+n] == 1 &&
-                bp->nei_level[face] <= bp->level)
-               bp->nei_refine[face] = 1;
-            else if (recv_int[comm_index[dir][which]+n] >= 0 &&
-                     bp->nei_refine[face] == -1)
-               bp->nei_refine[face] = 0;
+      int rev_status = (int *)malloc(sizeof(int)*num_comm_partners[dir]);
+      for(int i=0;i<num_comm_partners[dir];i++){
+         rev_status[i]=0;
+      }
+
+      int count = 0;
+
+      //for (i = 0; i < num_comm_partners[dir]; i++) {
+      while(1){
+         if(count >= num_comm_partners[dir]) break;
+         for(which=0;which<num_comm_partners[dir];which++){
+            if(rev_status[which]) continue;
+            //err = MPI_Waitany(num_comm_partners[dir], request, &which, &status);
+            int rc = MPI_Irecv(&recv_int[comm_index[dir][which]], comm_num[dir][which],
+            R_TYPE_INT, comm_partner[dir][which]);
+
+            if(rc == 0){
+               rev_status[which] = 1;
+               count++;
+               
+               for (n = 0; n < comm_num[dir][which]; n++) {
+                  face = dir*2+(comm_face_case[dir][comm_index[dir][which]+n] >= 10);
+                  bp = &blocks[comm_block[dir][comm_index[dir][which]+n]];
+                  if (recv_int[comm_index[dir][which]+n] == 1 &&
+                     bp->nei_level[face] <= bp->level)
+                     bp->nei_refine[face] = 1;
+                  else if (recv_int[comm_index[dir][which]+n] >= 0 &&
+                           bp->nei_refine[face] == -1)
+                     bp->nei_refine[face] = 0;
+               }
+            }
          }
       }
 
+      free(rev_status);
+
+/*
       if (nonblocking)
          for (i = 0; i < num_comm_partners[dir]; i++)
             err = MPI_Waitany(num_comm_partners[dir], s_req, &which, &status);
+*/
    }
 }
 
@@ -95,11 +119,12 @@ void comm_reverse_refine(void)
 
    for (dir = 0; dir < 3; dir++) {
       type = 13 + dir;
+      /*
       for (i = 0; i < num_comm_partners[dir]; i++)
          MPI_Irecv(&recv_int[comm_index[dir][i]], comm_num[dir][i],
-                   R_TYPE_INTEGER, comm_partner[dir][i], type, MPI_COMM_WORLD,
+                   R_TYPE_INT, comm_partner[dir][i], type, MPI_COMM_WORLD,
                    &request[i]);
-
+      */
       for (i = 0; i < num_comm_partners[dir]; i++) {
          if (nonblocking)
             offset = comm_index[dir][i];
@@ -111,36 +136,59 @@ void comm_reverse_refine(void)
                 blocks[comm_block[dir][comm_index[dir][i]+n]].nei_refine[face];
          }
          if (nonblocking)
-            MPI_Isend(&send_int[comm_index[dir][i]], comm_num[dir][i],
-                      R_TYPE_INTEGER, comm_partner[dir][i], type, MPI_COMM_WORLD,
-                      &s_req[i]);
+            MRDMA_Send(&send_int[comm_index[dir][i]], comm_num[dir][i],
+                      R_TYPE_INT, comm_partner[dir][i]);
          else
-            MPI_Send(send_int, comm_num[dir][i], R_TYPE_INTEGER,
-                     comm_partner[dir][i], type, MPI_COMM_WORLD);
+            RDMA_Send(send_int, comm_num[dir][i], R_TYPE_INT,
+                     comm_partner[dir][i]);
       }
 
-      for (i = 0; i < num_comm_partners[dir]; i++) {
-         MPI_Waitany(num_comm_partners[dir], request, &which, &status);
-         for (n = 0; n < comm_num[dir][which]; n++)
-            if (recv_int[comm_index[dir][which]+n] >
-                blocks[comm_block[dir][comm_index[dir][which]+n]].refine) {
-               bp = &blocks[comm_block[dir][comm_index[dir][which]+n]];
-               bp->refine = recv_int[comm_index[dir][which]+n];
-               if (bp->parent != -1 && bp->parent_node == my_pe)
-                  if (parents[bp->parent].refine == -1) {
-                     parents[bp->parent].refine = 0;
-                     for (c = 0; c < 8; c++)
-                        if (parents[bp->parent].child_node[c] == my_pe &&
-                            parents[bp->parent].child[c] >= 0 &&
-                            blocks[parents[bp->parent].child[c]].refine == -1)
-                           blocks[parents[bp->parent].child[c]].refine = 0;
+      int rev_status = (int *)malloc(sizeof(int)*num_comm_partners[dir]);
+      for(int i=0;i<num_comm_partners[dir];i++){
+         rev_status[i]=0;
+      }
+
+      int count = 0;
+
+      //for (i = 0; i < num_comm_partners[dir]; i++) {
+      while(1){
+         if(count >= num_comm_partners[dir]) break;
+         for(which=0;which<num_comm_partners[dir];which++){
+            if(rev_status[which]) continue;
+
+            int rc = RDMA_Irecv(&recv_int[comm_index[dir][which]], comm_num[dir][which],
+            R_TYPE_INT, comm_partner[dir][which]);
+            // MPI_Waitany(num_comm_partners[dir], request, &which, &status);
+
+            if(rc == 0){
+               rev_status[which] = 1;
+               count++;
+               for (n = 0; n < comm_num[dir][which]; n++)
+                  if (recv_int[comm_index[dir][which]+n] >
+                     blocks[comm_block[dir][comm_index[dir][which]+n]].refine) {
+                     bp = &blocks[comm_block[dir][comm_index[dir][which]+n]];
+                     bp->refine = recv_int[comm_index[dir][which]+n];
+                     if (bp->parent != -1 && bp->parent_node == my_pe)
+                        if (parents[bp->parent].refine == -1) {
+                           parents[bp->parent].refine = 0;
+                           for (c = 0; c < 8; c++)
+                              if (parents[bp->parent].child_node[c] == my_pe &&
+                                 parents[bp->parent].child[c] >= 0 &&
+                                 blocks[parents[bp->parent].child[c]].refine == -1)
+                                 blocks[parents[bp->parent].child[c]].refine = 0;
+                        }
                   }
             }
+         }
       }
 
+      free(rev_status);
+
+/*
       if (nonblocking)
          for (i = 0; i < num_comm_partners[dir]; i++)
             err = MPI_Waitany(num_comm_partners[dir], s_req, &which, &status);
+            */
    }
 }
 
@@ -154,11 +202,12 @@ void comm_refine_unrefine(void)
 
    for (dir = 0; dir < 3; dir++) {
       type = 16 + dir;
+      /*
       for (i = 0; i < num_comm_partners[dir]; i++)
          MPI_Irecv(&recv_int[comm_index[dir][i]], comm_num[dir][i],
-                   R_TYPE_INTEGER, comm_partner[dir][i], type, MPI_COMM_WORLD,
+                   R_TYPE_INT, comm_partner[dir][i], type, MPI_COMM_WORLD,
                    &request[i]);
-
+      */
       for (i = 0; i < num_comm_partners[dir]; i++) {
          if (nonblocking)
             offset = comm_index[dir][i];
@@ -168,25 +217,49 @@ void comm_refine_unrefine(void)
             send_int[offset+n] =
                           blocks[comm_block[dir][comm_index[dir][i]+n]].refine;
          if (nonblocking)
-            MPI_Isend(&send_int[comm_index[dir][i]], comm_num[dir][i],
-                      R_TYPE_INTEGER, comm_partner[dir][i], type, MPI_COMM_WORLD,
-                      &s_req[i]);
+            RDMA_Send(&send_int[comm_index[dir][i]], comm_num[dir][i],
+                      R_TYPE_INT, comm_partner[dir][i]);
          else
-            MPI_Send(&send_int[0], comm_num[dir][i], R_TYPE_INTEGER,
-                     comm_partner[dir][i], type, MPI_COMM_WORLD);
+            RDMA_Send(&send_int[0], comm_num[dir][i], R_TYPE_INT,
+                     comm_partner[dir][i]);
       }
 
-      for (i = 0; i < num_comm_partners[dir]; i++) {
-         err = MPI_Waitany(num_comm_partners[dir], request, &which, &status);
-         for (n = 0; n < comm_num[dir][which]; n++) {
-            face = dir*2+(comm_face_case[dir][comm_index[dir][which]+n] >= 10);
-            bp = &blocks[comm_block[dir][comm_index[dir][which]+n]];
-            bp->nei_refine[face] = recv_int[comm_index[dir][which]+n];
+      int rev_status = (int *)malloc(sizeof(int)*num_comm_partners[dir]);
+      for(int i=0;i<num_comm_partners[dir];i++){
+         rev_status[i]=0;
+      }
+
+      int count = 0;
+
+      //for (i = 0; i < num_comm_partners[dir]; i++) {
+      while(1){ 
+         if(count >= num_comm_partners[dir]) break;
+         
+         for(which=0;which<num_comm_partners[dir];which++){
+            if(rev_status[which]) continue;
+            
+            //err = MPI_Waitany(num_comm_partners[dir], request, &which, &status);
+            int rc = RDMA_Irecv(&recv_int[comm_index[dir][which]], comm_num[dir][which],
+            R_TYPE_INT, comm_partner[dir][which]);
+
+            if(rc == 0){
+               rev_status[which] = 1;
+               count++;
+
+               for (n = 0; n < comm_num[dir][which]; n++) {
+                  face = dir*2+(comm_face_case[dir][comm_index[dir][which]+n] >= 10);
+                  bp = &blocks[comm_block[dir][comm_index[dir][which]+n]];
+                  bp->nei_refine[face] = recv_int[comm_index[dir][which]+n];
+               }
+            }
          }
       }
 
+      free(rev_status);
+/*
       if (nonblocking)
          for (i = 0; i < num_comm_partners[dir]; i++)
             err = MPI_Waitany(num_comm_partners[dir], s_req, &which, &status);
+*/
    }
 }
