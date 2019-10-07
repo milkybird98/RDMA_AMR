@@ -27,29 +27,29 @@
 #ifndef TIMER_H
 #define TIMER_H
 
-extern double average[128];
-extern double stddev[128];
-extern double minimum[128];
-extern double maximum[128];
+ double average[128];
+ double stddev[128];
+ double minimum[128];
+ double maximum[128];
 
-extern double timer_all;
+ double timer_all;
 
-extern double timer_comm_all;
-extern double timer_comm_dir[3];
-extern double timer_comm_recv[3];
-extern double timer_comm_pack[3];
-extern double timer_comm_send[3];
-extern double timer_comm_same[3];
-extern double timer_comm_diff[3];
-extern double timer_comm_bc[3];
-extern double timer_comm_wait[3];
-extern double timer_comm_unpack[3];
+ double timer_comm_all;
+ double timer_comm_dir[3];
+ double timer_comm_recv[3];
+ double timer_comm_pack[3];
+ double timer_comm_send[3];
+ double timer_comm_same[3];
+ double timer_comm_diff[3];
+ double timer_comm_bc[3];
+ double timer_comm_wait[3];
+ double timer_comm_unpack[3];
 
-extern double timer_calc_all;
+ double timer_calc_all;
 
-extern double timer_cs_all;
-extern double timer_cs_red;
-extern double timer_cs_calc;
+ double timer_cs_all;
+ double timer_cs_red;
+ double timer_cs_calc;
 
 double timer_refine_all;
 double timer_refine_co;
